@@ -1,5 +1,5 @@
-const nodemailer = require('nodemailer');
-const { getPendingConversations, getInstances } = require('./database');
+const { Resend } = require('resend');
+const { getPendingConversations } = require('./database');
 
 function formatTimeAgo(timestamp) {
   const seconds = Math.floor(Date.now() / 1000 - timestamp);
@@ -19,11 +19,12 @@ function getUrgencyColor(timestamp) {
 }
 
 async function sendDailyReport(emailConfig) {
-  if (!emailConfig || !emailConfig.to) {
+  if (!emailConfig || !emailConfig.to || !emailConfig.apiKey) {
     console.log('E-mail não configurado.');
     return;
   }
 
+  const resend = new Resend(emailConfig.apiKey);
   const pending = await getPendingConversations();
   const now = new Date().toLocaleString('pt-BR', { timeZone: 'America/Recife' });
   const critical = pending.filter(c => (Date.now()/1000 - c.last_timestamp)/60 > 120).length;
@@ -42,9 +43,9 @@ async function sendDailyReport(emailConfig) {
       const message = (c.last_message||'(mídia)').substring(0,100);
       rows += `<tr style="border-bottom:1px solid #f3f4f6;">
         <td style="padding:12px 16px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:8px;"></span><strong>${name}</strong><br><small style="color:#9ca3af;">${phone}</small></td>
-        <td style="padding:12px 16px;color:#374151;">${inst}</td>
+        <td style="padding:12px 16px;">${inst}</td>
         <td style="padding:12px 16px;color:${color};font-weight:600;">${timeAgo}</td>
-        <td style="padding:12px 16px;color:#6b7280;font-style:italic;">"${message}"</td>
+        <td style="padding:12px 16px;font-style:italic;">"${message}"</td>
       </tr>`;
     });
   }
@@ -54,20 +55,20 @@ async function sendDailyReport(emailConfig) {
   <div style="max-width:680px;margin:0 auto;padding:32px 16px;">
     <div style="background:#1a1a2e;border-radius:16px;padding:32px;margin-bottom:24px;text-align:center;">
       <h1 style="color:#fff;margin:0;font-size:24px;">📱 Relatório de Atendimento</h1>
-      <p style="color:#9ca3af;margin:8px 0 0;font-size:14px;">${now}</p>
+      <p style="color:#9ca3af;margin:8px 0 0;">${now}</p>
     </div>
     <div style="display:flex;gap:16px;margin-bottom:24px;">
       <div style="flex:1;background:#fff;border-radius:12px;padding:20px;text-align:center;border:2px solid ${critical>0?'#f04a6a':'#e5e7eb'};">
         <div style="font-size:32px;font-weight:800;color:#f04a6a;">${critical}</div>
-        <div style="font-size:13px;color:#6b7280;margin-top:4px;">🔴 Urgentes (+2h)</div>
+        <div style="font-size:13px;color:#6b7280;">🔴 Urgentes (+2h)</div>
       </div>
       <div style="flex:1;background:#fff;border-radius:12px;padding:20px;text-align:center;border:2px solid ${warning>0?'#f5a623':'#e5e7eb'};">
         <div style="font-size:32px;font-weight:800;color:#f5a623;">${warning}</div>
-        <div style="font-size:13px;color:#6b7280;margin-top:4px;">🟡 Atenção (1-2h)</div>
+        <div style="font-size:13px;color:#6b7280;">🟡 Atenção (1-2h)</div>
       </div>
       <div style="flex:1;background:#fff;border-radius:12px;padding:20px;text-align:center;">
         <div style="font-size:32px;font-weight:800;color:#6b7280;">${pending.length}</div>
-        <div style="font-size:13px;color:#6b7280;margin-top:4px;">📋 Total pendente</div>
+        <div style="font-size:13px;color:#6b7280;">📋 Total pendente</div>
       </div>
     </div>
     <div style="background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
@@ -84,24 +85,16 @@ async function sendDailyReport(emailConfig) {
         <tbody>${rows}</tbody>
       </table>
     </div>
-    <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:24px;">Monitor de Atendimento WhatsApp • ${now}</p>
   </div></body></html>`;
 
-  const transporter = nodemailer.createTransport({
-  host: emailConfig.host || 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: { user: emailConfig.user, pass: emailConfig.pass }
-});
-
-  await transporter.sendMail({
-    from: `"Monitor WhatsApp" <${emailConfig.user}>`,
-    to: emailConfig.to,
+  const result = await resend.emails.send({
+    from: 'Monitor WhatsApp <onboarding@resend.dev>',
+    to: emailConfig.to.split(',').map(e => e.trim()),
     subject: `📊 Relatório — ${pending.length} pendente${pending.length!==1?'s':''} ${critical>0?'🔴':''}`,
     html
   });
 
-  console.log(`✅ Relatório enviado para ${emailConfig.to}`);
+  console.log('✅ Relatório enviado!', result);
 }
 
 module.exports = { sendDailyReport };
