@@ -114,22 +114,18 @@ app.post('/api/instances', async (req, res) => {
 
 app.post('/api/report/send', async (req, res) => {
   try {
-    const emailConfig = {
-      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.EMAIL_PORT || '587'),
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-      to: process.env.EMAIL_TO
-    };
-    console.log('📧 Tentando enviar relatório para:', emailConfig.to);
-    console.log('📧 Usuário:', emailConfig.user);
-    await sendDailyReport(emailConfig);
-    res.json({ success: true });
-  } catch (err) {
-    console.error('❌ ERRO NO RELATÓRIO:', err.message);
-    console.error(err.stack);
-    res.status(500).json({ error: err.message });
-  }
+  const emailConfig = {
+    apiKey: process.env.RESEND_API_KEY,
+    to: process.env.EMAIL_TO
+  };
+  console.log('📧 Tentando enviar relatório para:', emailConfig.to);
+  await sendDailyReport(emailConfig);
+  res.json({ success: true });
+} catch (err) {
+  console.error('❌ ERRO NO RELATÓRIO:', err.message);
+  console.error(err.stack);
+  res.status(500).json({ error: err.message });
+}
 });
 
 // ─── CRON ─────────────────────────────────────────────────────────────────────
@@ -137,10 +133,7 @@ app.post('/api/report/send', async (req, res) => {
 const REPORT_HOUR = process.env.REPORT_HOUR || '8';
 cron.schedule(`0 ${REPORT_HOUR} * * *`, async () => {
   await sendDailyReport({
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.EMAIL_PORT || '587'),
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    apiKey: process.env.RESEND_API_KEY,
     to: process.env.EMAIL_TO
   });
 }, { timezone: 'America/Recife' });
