@@ -114,18 +114,23 @@ app.post('/api/instances', async (req, res) => {
 
 app.post('/api/report/send', async (req, res) => {
   try {
-    await sendDailyReport({
+    const emailConfig = {
       host: process.env.EMAIL_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.EMAIL_PORT || '587'),
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
       to: process.env.EMAIL_TO
-    });
+    };
+    console.log('📧 Tentando enviar relatório para:', emailConfig.to);
+    console.log('📧 Usuário:', emailConfig.user);
+    await sendDailyReport(emailConfig);
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    console.error('❌ ERRO NO RELATÓRIO:', err.message);
+    console.error(err.stack);
+    res.status(500).json({ error: err.message });
+  }
 });
-
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 // ─── CRON ─────────────────────────────────────────────────────────────────────
 
