@@ -88,11 +88,11 @@ async function sendDailyReport(emailConfig) {
   </div></body></html>`;
 
   const transporter = nodemailer.createTransport({
-    host: emailConfig.host || 'smtp.gmail.com',
-    port: emailConfig.port || 587,
-    secure: false,
-    auth: { user: emailConfig.user, pass: emailConfig.pass }
-  });
+  host: emailConfig.host || 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  auth: { user: emailConfig.user, pass: emailConfig.pass }
+});
 
   await transporter.sendMail({
     from: `"Monitor WhatsApp" <${emailConfig.user}>`,
