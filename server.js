@@ -34,7 +34,8 @@ app.post('/webhook/:instanceId', async (req, res) => {
       const phone = body.phone || body.from || body.chatId;
       const text = body.text?.message || body.caption || body.body || '';
       const contactName = body.senderName || body.pushName || body.notifyName || '';
-      const timestamp = body.momment || body.timestamp || Math.floor(Date.now() / 1000);
+      const ts = body.momment || body.timestamp || Date.now();
+      const timestamp = ts > 9999999999 ? Math.floor(ts / 1000) : ts;
 
       if (phone && !phone.includes('@g.us')) {
         await saveMessage({
@@ -50,7 +51,8 @@ app.post('/webhook/:instanceId', async (req, res) => {
     if (type === 'SentCallback' || body.isSentByMe || body.fromMe === true) {
       const phone = body.phone || body.to || body.chatId;
       const text = body.text?.message || body.caption || body.body || '';
-      const timestamp = body.momment || body.timestamp || Math.floor(Date.now() / 1000);
+      const ts = body.momment || body.timestamp || Date.now();
+      const timestamp = ts > 9999999999 ? Math.floor(ts / 1000) : ts;
 
       if (phone && !phone.includes('@g.us')) {
         await saveMessage({
