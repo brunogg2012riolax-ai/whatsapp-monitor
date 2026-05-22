@@ -1,112 +1,107 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monitor de Atendimento</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #0d0d14;
-      --surface: #16161f;
-      --surface2: #1e1e2d;
-      --border: #2a2a3d;
-      --text: #e8e8f0;
-      --text-muted: #6b6b85;
-      --accent: #7c6af7;
-      --accent-glow: rgba(124,106,247,0.15);
-      --red: #f04a6a;
-      --red-bg: rgba(240,74,106,0.1);
-      --yellow: #f5a623;
-      --yellow-bg: rgba(245,166,35,0.1);
-      --green: #26d87c;
-      --green-bg: rgba(38,216,124,0.1);
-    }
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; }
-    .header { background:var(--surface); border-bottom:1px solid var(--border); padding:0 24px; height:64px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
-    .logo { display:flex; align-items:center; gap:10px; font-family:'Syne',sans-serif; font-weight:800; font-size:18px; }
-    .logo-icon { width:34px; height:34px; background:var(--accent); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; }
-    .header-right { display:flex; align-items:center; gap:10px; }
-    .last-update { font-size:12px; color:var(--text-muted); }
-    .btn { border:none; border-radius:8px; padding:8px 14px; font-size:13px; font-family:'DM Sans',sans-serif; font-weight:500; cursor:pointer; transition:opacity 0.2s; }
-    .btn-primary { background:var(--accent); color:#fff; }
-    .btn-secondary { background:var(--surface2); border:1px solid var(--border); color:var(--text-muted); }
-    .btn:hover { opacity:0.85; }
-    .container { max-width:1100px; margin:0 auto; padding:28px 20px; }
-    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:28px; }
-    .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px; }
-    .stat-card.red { border-color:var(--red); background:linear-gradient(135deg,var(--surface),var(--red-bg)); }
-    .stat-card.yellow { border-color:var(--yellow); background:linear-gradient(135deg,var(--surface),var(--yellow-bg)); }
-    .stat-card.green { border-color:var(--green); background:linear-gradient(135deg,var(--surface),var(--green-bg)); }
-    .stat-label { font-size:12px; font-weight:500; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; }
-    .stat-number { font-family:'Syne',sans-serif; font-size:40px; font-weight:800; line-height:1; }
-    .stat-card.red .stat-number { color:var(--red); }
-    .stat-card.yellow .stat-number { color:var(--yellow); }
-    .stat-card.green .stat-number { color:var(--green); }
-    .stat-sub { font-size:11px; color:var(--text-muted); margin-top:4px; }
-    .filters { display:flex; align-items:center; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
-    .filter-label { font-size:13px; color:var(--text-muted); }
-    .filter-btn { background:var(--surface); border:1px solid var(--border); color:var(--text-muted); border-radius:8px; padding:7px 14px; font-size:13px; font-family:'DM Sans',sans-serif; cursor:pointer; transition:all 0.2s; }
-    .filter-btn.active { background:var(--accent-glow); border-color:var(--accent); color:var(--accent); }
-    .section-title { font-family:'Syne',sans-serif; font-size:18px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
-    .badge { background:var(--surface2); border:1px solid var(--border); color:var(--text-muted); border-radius:20px; padding:2px 10px; font-size:12px; font-family:'DM Sans',sans-serif; }
-    .conversation-list { display:flex; flex-direction:column; gap:10px; }
-    .conv-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 20px; display:flex; align-items:center; gap:16px; cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden; }
-    .conv-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; }
-    .conv-card.urgent::before { background:var(--red); }
-    .conv-card.warning::before { background:var(--yellow); }
-    .conv-card.normal::before { background:var(--green); }
-    .conv-card:hover { border-color:var(--accent); transform:translateY(-1px); box-shadow:0 4px 20px rgba(0,0,0,0.3); }
-    .conv-avatar { width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Syne',sans-serif; font-weight:700; font-size:18px; flex-shrink:0; }
-    .conv-card.urgent .conv-avatar { background:var(--red-bg); color:var(--red); }
-    .conv-card.warning .conv-avatar { background:var(--yellow-bg); color:var(--yellow); }
-    .conv-card.normal .conv-avatar { background:var(--green-bg); color:var(--green); }
-    .conv-body { flex:1; min-width:0; }
-    .conv-name { font-weight:600; font-size:15px; margin-bottom:2px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-    .conv-instance-tag { font-size:10px; background:var(--surface2); border:1px solid var(--border); color:var(--text-muted); border-radius:4px; padding:1px 6px; font-weight:400; }
-    .conv-message { font-size:13px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-style:italic; }
-    .conv-phone { font-size:11px; color:var(--text-muted); margin-top:2px; }
-    .conv-time { text-align:right; flex-shrink:0; }
-    .time-badge { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; }
-    .conv-card.urgent .time-badge { color:var(--red); }
-    .conv-card.warning .time-badge { color:var(--yellow); }
-    .conv-card.normal .time-badge { color:var(--green); }
-    .time-label { font-size:10px; color:var(--text-muted); margin-top:2px; }
-    .empty-state { background:var(--surface); border:1px dashed var(--border); border-radius:14px; padding:60px 20px; text-align:center; }
-    .empty-icon { font-size:48px; margin-bottom:12px; }
-    .empty-title { font-family:'Syne',sans-serif; font-size:20px; font-weight:700; color:var(--green); margin-bottom:6px; }
-    .empty-sub { font-size:14px; color:var(--text-muted); }
-    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; display:none; align-items:center; justify-content:center; padding:20px; }
-    .modal-overlay.open { display:flex; }
-    .modal { background:var(--surface); border:1px solid var(--border); border-radius:20px; width:100%; max-width:520px; max-height:80vh; display:flex; flex-direction:column; overflow:hidden; }
-    .modal-header { padding:20px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
-    .modal-title { font-family:'Syne',sans-serif; font-size:17px; font-weight:700; }
-    .modal-close { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:22px; padding:4px; line-height:1; }
-    .modal-messages { flex:1; overflow-y:auto; padding:20px 24px; display:flex; flex-direction:column; gap:10px; }
-    .msg-bubble { max-width:80%; padding:10px 14px; border-radius:14px; font-size:13px; line-height:1.5; }
-    .msg-bubble.received { background:var(--surface2); border:1px solid var(--border); align-self:flex-start; border-bottom-left-radius:4px; }
-    .msg-bubble.sent { background:var(--accent-glow); border:1px solid var(--accent); align-self:flex-end; border-bottom-right-radius:4px; color:#c5bfff; }
-    .msg-time { font-size:10px; color:var(--text-muted); margin-top:4px; }
-    .config-grid { display:grid; gap:14px; padding:16px 24px; overflow-y:auto; max-height:50vh; }
-    .config-field label { display:block; font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; }
-    .config-field input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px 14px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px; outline:none; transition:border-color 0.2s; }
-    .config-field input:focus { border-color:var(--accent); }
-    .config-save { margin:0 24px 20px; background:var(--accent); color:#fff; border:none; border-radius:10px; padding:12px; width:calc(100% - 48px); font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; cursor:pointer; }
-    .toast { position:fixed; bottom:24px; right:24px; background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px 20px; font-size:14px; color:var(--text); z-index:999; transform:translateY(100px); opacity:0; transition:all 0.3s; pointer-events:none; }
-    .toast.show { transform:translateY(0); opacity:1; }
-    .toast.success { border-color:var(--green); color:var(--green); }
-    .toast.error { border-color:var(--red); color:var(--red); }
-    .setup-banner { background:linear-gradient(135deg,#1e1e3a,#1a1a2e); border:1px solid var(--accent); border-radius:14px; padding:20px 24px; margin-bottom:24px; display:flex; align-items:center; gap:16px; }
-    @keyframes pulse-red { 0%,100%{box-shadow:0 0 0 0 rgba(240,74,106,0);} 50%{box-shadow:0 0 0 4px rgba(240,74,106,0.2);} }
-    .conv-card.urgent { animation:pulse-red 2.5s infinite; }
-    ::-webkit-scrollbar{width:6px;} ::-webkit-scrollbar-track{background:transparent;} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
-    @media(max-width:600px){.stats-grid{grid-template-columns:1fr 1fr;}.conv-card{padding:14px;}.header{padding:0 16px;}.container{padding:20px 14px;}.last-update{display:none;}}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor de Atendimento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:#f1f5f9; min-height:100vh; color:#0f172a; }
+  .header { background:#fff; border-bottom:1px solid #e2e8f0; padding:0 24px; height:60px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 1px 3px rgba(0,0,0,0.06); position:sticky; top:0; z-index:100; }
+  .logo { display:flex; align-items:center; gap:10px; font-size:16px; font-weight:700; color:#0f172a; }
+  .logo-icon { width:32px; height:32px; background:#22c55e; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+  .header-right { display:flex; align-items:center; gap:8px; }
+  .last-update { font-size:12px; color:#94a3b8; }
+  .btn { border:none; border-radius:8px; padding:8px 14px; font-size:13px; font-family:'Inter',sans-serif; font-weight:500; cursor:pointer; transition:opacity 0.2s; }
+  .btn-primary { background:#22c55e; color:#fff; }
+  .btn-secondary { background:#f8fafc; border:1px solid #e2e8f0; color:#64748b; }
+  .btn:hover { opacity:0.85; }
+  .container { max-width:1100px; margin:0 auto; padding:28px 20px; }
+  .setup-banner { background:#fff; border:1px solid #22c55e; border-radius:12px; padding:20px 24px; margin-bottom:24px; display:flex; align-items:center; gap:16px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+  .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:28px; }
+  .stat-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.05); position:relative; overflow:hidden; }
+  .stat-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; }
+  .stat-card.red::before { background:#ef4444; }
+  .stat-card.yellow::before { background:#f59e0b; }
+  .stat-card.blue::before { background:#3b82f6; }
+  .stat-card.green::before { background:#22c55e; }
+  .stat-label { font-size:10px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:8px; }
+  .stat-number { font-size:38px; font-weight:800; line-height:1; }
+  .stat-card.red .stat-number { color:#ef4444; }
+  .stat-card.yellow .stat-number { color:#f59e0b; }
+  .stat-card.blue .stat-number { color:#3b82f6; }
+  .stat-card.green .stat-number { color:#22c55e; }
+  .stat-sub { font-size:11px; color:#94a3b8; margin-top:5px; }
+  .filters { display:flex; align-items:center; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+  .filter-label { font-size:13px; color:#64748b; }
+  .filter-btn { background:#f8fafc; border:1px solid #e2e8f0; color:#64748b; border-radius:8px; padding:7px 14px; font-size:12px; font-family:'Inter',sans-serif; cursor:pointer; transition:all 0.2s; }
+  .filter-btn.active { background:#f0fdf4; border-color:#22c55e; color:#16a34a; font-weight:600; }
+  .filter-btn:hover:not(.active) { border-color:#94a3b8; color:#0f172a; }
+  .section-title { font-size:16px; font-weight:700; color:#0f172a; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .badge { background:#f1f5f9; border:1px solid #e2e8f0; color:#64748b; border-radius:20px; padding:2px 10px; font-size:12px; font-weight:400; }
+  .conversation-list { display:flex; flex-direction:column; gap:10px; }
+  .conv-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 20px; display:flex; align-items:center; gap:16px; cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+  .conv-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; }
+  .conv-card.urgent::before { background:#ef4444; }
+  .conv-card.warning::before { background:#f59e0b; }
+  .conv-card.normal::before { background:#22c55e; }
+  .conv-card:hover { border-color:#22c55e; transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,0.08); }
+  .conv-avatar { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:18px; flex-shrink:0; }
+  .conv-card.urgent .conv-avatar { background:#fef2f2; color:#ef4444; }
+  .conv-card.warning .conv-avatar { background:#fffbeb; color:#f59e0b; }
+  .conv-card.normal .conv-avatar { background:#f0fdf4; color:#22c55e; }
+  .conv-body { flex:1; min-width:0; }
+  .conv-name { font-weight:600; font-size:14px; color:#0f172a; margin-bottom:3px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .conv-tag { font-size:10px; background:#f1f5f9; border:1px solid #e2e8f0; color:#94a3b8; border-radius:4px; padding:1px 7px; font-weight:400; }
+  .conv-msg { font-size:13px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-style:italic; }
+  .conv-phone { font-size:11px; color:#94a3b8; margin-top:3px; }
+  .conv-time { text-align:right; flex-shrink:0; }
+  .time-badge { font-size:15px; font-weight:700; }
+  .conv-card.urgent .time-badge { color:#ef4444; }
+  .conv-card.warning .time-badge { color:#f59e0b; }
+  .conv-card.normal .time-badge { color:#22c55e; }
+  .time-label { font-size:10px; color:#94a3b8; margin-top:2px; }
+  .empty-state { background:#fff; border:1px dashed #e2e8f0; border-radius:12px; padding:60px 20px; text-align:center; }
+  .empty-icon { font-size:48px; margin-bottom:12px; }
+  .empty-title { font-size:20px; font-weight:700; color:#22c55e; margin-bottom:6px; }
+  .empty-sub { font-size:14px; color:#94a3b8; }
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; display:none; align-items:center; justify-content:center; padding:20px; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:#fff; border:1px solid #e2e8f0; border-radius:16px; width:100%; max-width:520px; max-height:80vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.15); }
+  .modal-header { padding:20px 24px; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; }
+  .modal-title { font-size:16px; font-weight:700; color:#0f172a; }
+  .modal-close { background:none; border:none; color:#94a3b8; cursor:pointer; font-size:22px; padding:4px; line-height:1; }
+  .modal-close:hover { color:#0f172a; }
+  .modal-messages { flex:1; overflow-y:auto; padding:20px 24px; display:flex; flex-direction:column; gap:10px; }
+  .msg-bubble { max-width:80%; padding:10px 14px; border-radius:14px; font-size:13px; line-height:1.5; }
+  .msg-bubble.received { background:#f1f5f9; border:1px solid #e2e8f0; align-self:flex-start; border-bottom-left-radius:4px; color:#0f172a; }
+  .msg-bubble.sent { background:#f0fdf4; border:1px solid #bbf7d0; align-self:flex-end; border-bottom-right-radius:4px; color:#166534; }
+  .msg-time { font-size:10px; color:#94a3b8; margin-top:4px; }
+  .config-grid { display:grid; gap:14px; padding:16px 24px; overflow-y:auto; max-height:50vh; }
+  .config-field label { display:block; font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; }
+  .config-field input { width:100%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; color:#0f172a; font-family:'Inter',sans-serif; font-size:14px; outline:none; transition:border-color 0.2s; }
+  .config-field input:focus { border-color:#22c55e; }
+  .config-save { margin:0 24px 20px; background:#22c55e; color:#fff; border:none; border-radius:10px; padding:12px; width:calc(100% - 48px); font-family:'Inter',sans-serif; font-size:15px; font-weight:600; cursor:pointer; }
+  .config-save:hover { background:#16a34a; }
+  .toast { position:fixed; bottom:24px; right:24px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:14px 20px; font-size:14px; color:#0f172a; z-index:999; transform:translateY(100px); opacity:0; transition:all 0.3s; box-shadow:0 4px 20px rgba(0,0,0,0.1); }
+  .toast.show { transform:translateY(0); opacity:1; }
+  .toast.success { border-color:#22c55e; color:#16a34a; }
+  .toast.error { border-color:#ef4444; color:#ef4444; }
+  ::-webkit-scrollbar { width:6px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:#e2e8f0; border-radius:3px; }
+  @media(max-width:600px) {
+    .stats-grid { grid-template-columns:1fr 1fr; }
+    .conv-card { padding:14px; }
+    .header { padding:0 16px; }
+    .container { padding:20px 14px; }
+    .last-update { display:none; }
+  }
+</style>
 </head>
 <body>
-
 <header class="header">
   <div class="logo">
     <div class="logo-icon">📱</div>
@@ -118,61 +113,31 @@
     <button class="btn btn-secondary" onclick="openConfig()">⚙️</button>
   </div>
 </header>
-
 <div class="container">
-
   <div class="setup-banner" id="setupBanner" style="display:none;">
     <div style="font-size:32px;">⚙️</div>
     <div>
-      <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--accent);margin-bottom:4px;">Configure seu primeiro número</div>
-      <div style="font-size:13px;color:var(--text-muted);">Adicione as instâncias Z-API para começar a monitorar.</div>
+      <div style="font-size:15px;font-weight:700;color:#16a34a;margin-bottom:4px;">Configure seu primeiro número</div>
+      <div style="font-size:13px;color:#64748b;">Adicione as instâncias Z-API para começar a monitorar.</div>
     </div>
     <button class="btn btn-primary" style="margin-left:auto;white-space:nowrap;" onclick="openConfig()">Configurar agora</button>
   </div>
-
   <div class="stats-grid">
-    <div class="stat-card red">
-      <div class="stat-label">🔴 Urgente (+2h)</div>
-      <div class="stat-number" id="statCritical">—</div>
-      <div class="stat-sub">Sem resposta há mais de 2h</div>
-    </div>
-    <div class="stat-card yellow">
-      <div class="stat-label">🟡 Atenção (1–2h)</div>
-      <div class="stat-number" id="statWarning">—</div>
-      <div class="stat-sub">Aguardando resposta</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">📋 Total pendente</div>
-      <div class="stat-number" id="statPending">—</div>
-      <div class="stat-sub">Clientes sem resposta agora</div>
-    </div>
-    <div class="stat-card green">
-      <div class="stat-label">✅ Respondidos hoje</div>
-      <div class="stat-number" id="statResponded">—</div>
-      <div class="stat-sub">Conversas atendidas hoje</div>
-    </div>
+    <div class="stat-card red"><div class="stat-label">🔴 Urgente (+2h)</div><div class="stat-number" id="statCritical">—</div><div class="stat-sub">Sem resposta há mais de 2h</div></div>
+    <div class="stat-card yellow"><div class="stat-label">🟡 Atenção (1–2h)</div><div class="stat-number" id="statWarning">—</div><div class="stat-sub">Aguardando resposta</div></div>
+    <div class="stat-card blue"><div class="stat-label">📋 Total pendente</div><div class="stat-number" id="statPending">—</div><div class="stat-sub">Clientes sem resposta agora</div></div>
+    <div class="stat-card green"><div class="stat-label">✅ Respondidos hoje</div><div class="stat-number" id="statResponded">—</div><div class="stat-sub">Conversas atendidas hoje</div></div>
   </div>
-
   <div class="filters">
     <span class="filter-label">Filtrar:</span>
-    <button class="filter-btn active" onclick="setFilter('all', this)">Todos os números</button>
+    <button class="filter-btn active" onclick="setFilter('all',this)">Todos os números</button>
     <span id="instanceFilters"></span>
   </div>
-
-  <div class="section-title">
-    Conversas pendentes
-    <span class="badge" id="pendingCount">0</span>
-  </div>
-
+  <div class="section-title">Conversas pendentes <span class="badge" id="pendingCount">0</span></div>
   <div class="conversation-list" id="conversationList">
-    <div style="text-align:center;padding:40px;color:var(--text-muted);">
-      <div style="font-size:32px;margin-bottom:12px;">⏳</div>
-      Carregando conversas...
-    </div>
+    <div style="text-align:center;padding:40px;color:#94a3b8;"><div style="font-size:32px;margin-bottom:12px;">⏳</div>Carregando conversas...</div>
   </div>
 </div>
-
-<!-- MODAL: Histórico -->
 <div class="modal-overlay" id="historyModal">
   <div class="modal">
     <div class="modal-header">
@@ -182,242 +147,42 @@
     <div class="modal-messages" id="historyMessages"></div>
   </div>
 </div>
-
-<!-- MODAL: Config -->
 <div class="modal-overlay" id="configModal">
   <div class="modal" style="max-width:500px;">
     <div class="modal-header">
       <div class="modal-title">⚙️ Configurar Números Z-API</div>
       <button class="modal-close" onclick="closeModal('configModal')">×</button>
     </div>
-    <div style="padding:14px 24px 0;font-size:13px;color:var(--text-muted);">
-      Adicione cada número do WhatsApp. Você encontra o <strong style="color:var(--text);">ID</strong> e o <strong style="color:var(--text);">Token</strong> no painel Z-API → Instâncias Web.
-    </div>
+    <div style="padding:14px 24px 0;font-size:13px;color:#64748b;">Adicione cada número do WhatsApp. Encontre o <strong style="color:#0f172a;">ID</strong> e o <strong style="color:#0f172a;">Token</strong> no painel Z-API → Instâncias Web.</div>
     <div class="config-grid" id="instanceConfigList"></div>
-    <div style="padding:0 24px 12px;">
-      <button style="width:100%;background:var(--surface2);border:1px dashed var(--border);color:var(--text-muted);border-radius:10px;padding:11px;font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;" onclick="addInstanceForm()">+ Adicionar outro número</button>
-    </div>
+    <div style="padding:0 24px 12px;"><button style="width:100%;background:#f8fafc;border:1px dashed #e2e8f0;color:#64748b;border-radius:10px;padding:11px;font-family:'Inter',sans-serif;font-size:14px;cursor:pointer;" onclick="addInstanceForm()">+ Adicionar outro número</button></div>
     <button class="config-save" onclick="saveConfig()">💾 Salvar configurações</button>
   </div>
 </div>
-
 <div class="toast" id="toast"></div>
-
 <script>
-  let currentFilter = 'all';
-  let allConversations = [];
-  let instances = [];
-
-  function formatTimeAgo(ts) {
-    const s = Math.floor(Date.now()/1000 - ts);
-    if(s<60) return s+'s';
-    const m = Math.floor(s/60);
-    if(m<60) return m+'min';
-    const h = Math.floor(m/60);
-    const rm = m%60;
-    if(h<24) return h+'h'+(rm>0?String(rm).padStart(2,'0')+'m':'');
-    return Math.floor(h/24)+'d';
-  }
-
-  function formatDateTime(ts) {
-    return new Date(ts*1000).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-  }
-
-  function getUrgency(ts) {
-    const m=(Date.now()/1000-ts)/60;
-    if(m>120) return 'urgent';
-    if(m>60) return 'warning';
-    return 'normal';
-  }
-
-  function getInitials(name, phone) {
-    if(name&&name.length>0) return name.charAt(0).toUpperCase();
-    const d=(phone||'').replace(/\D/g,'');
-    return d.charAt(d.length-2)||'?';
-  }
-
-  function fmtPhone(p) {
-    const n=p.replace('@c.us','').replace(/\D/g,'');
-    if(n.length===13) return `+${n.slice(0,2)} (${n.slice(2,4)}) ${n.slice(4,9)}-${n.slice(9)}`;
-    if(n.length===12) return `+${n.slice(0,2)} (${n.slice(2,4)}) ${n.slice(4,8)}-${n.slice(8)}`;
-    return n;
-  }
-
-  async function fetchInstances() {
-    try {
-      const r=await fetch('/api/instances');
-      instances=await r.json();
-      renderInstanceFilters();
-      document.getElementById('setupBanner').style.display=instances.length===0?'flex':'none';
-    } catch(e){}
-  }
-
-  function renderInstanceFilters() {
-    document.getElementById('instanceFilters').innerHTML=instances.map(i=>
-      `<button class="filter-btn" onclick="setFilter('${i.id}',this)">${i.name}</button>`
-    ).join('');
-  }
-
-  async function fetchConversations() {
-    try {
-      const q=currentFilter!=='all'?`?instanceId=${currentFilter}`:'';
-      const r=await fetch('/api/pending'+q);
-      allConversations=await r.json();
-      renderConversations(allConversations);
-      fetchStats();
-      document.getElementById('lastUpdate').textContent='Atualizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    } catch(e){ console.error(e); }
-  }
-
-  async function fetchStats() {
-    try {
-      const q=currentFilter!=='all'?`?instanceId=${currentFilter}`:'';
-      const r=await fetch('/api/stats'+q);
-      const d=await r.json();
-      document.getElementById('statCritical').textContent=d.pendingCritical??'—';
-      document.getElementById('statPending').textContent=d.pending??'—';
-      document.getElementById('statResponded').textContent=d.respondedToday??'—';
-      const warn=allConversations.filter(c=>{const m=(Date.now()/1000-c.last_timestamp)/60;return m>60&&m<=120;}).length;
-      document.getElementById('statWarning').textContent=warn;
-    } catch(e){}
-  }
-
-  function renderConversations(convs) {
-    const list=document.getElementById('conversationList');
-    document.getElementById('pendingCount').textContent=convs.length;
-    if(convs.length===0){
-      list.innerHTML=`<div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-title">Tudo em dia!</div><div class="empty-sub">Nenhuma conversa pendente de resposta no momento.</div></div>`;
-      return;
-    }
-    list.innerHTML=convs.map(c=>{
-      const urg=getUrgency(c.last_timestamp);
-      const init=getInitials(c.contact_name,c.phone);
-      const name=c.contact_name||fmtPhone(c.phone);
-      const msg=(c.last_message||'(mídia)').substring(0,80);
-      const time=formatTimeAgo(c.last_timestamp);
-      const inst=c.instance_name||c.instance_id;
-      const phone=fmtPhone(c.phone);
-      const safePhone=encodeURIComponent(c.phone);
-      const safeName=name.replace(/'/g,"\\'");
-      return `<div class="conv-card ${urg}" onclick="openHistory('${c.instance_id}','${safePhone}','${safeName}')">
-        <div class="conv-avatar">${init}</div>
-        <div class="conv-body">
-          <div class="conv-name">${name}<span class="conv-instance-tag">${inst}</span></div>
-          <div class="conv-message">"${msg}${c.last_message&&c.last_message.length>80?'...':''}"</div>
-          <div class="conv-phone">${phone}</div>
-        </div>
-        <div class="conv-time"><div class="time-badge">${time}</div><div class="time-label">sem resposta</div></div>
-      </div>`;
-    }).join('');
-  }
-
-  function setFilter(f, btn) {
-    currentFilter=f;
-    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    fetchConversations();
-  }
-
-  async function openHistory(instanceId, phone, name) {
-    document.getElementById('historyModalTitle').textContent=`💬 ${name}`;
-    document.getElementById('historyMessages').innerHTML='<div style="text-align:center;color:var(--text-muted);padding:20px;">Carregando...</div>';
-    document.getElementById('historyModal').classList.add('open');
-    try {
-      const r=await fetch(`/api/conversation/${instanceId}/${phone}`);
-      const msgs=await r.json();
-      if(!msgs.length){
-        document.getElementById('historyMessages').innerHTML='<div style="text-align:center;color:var(--text-muted);padding:20px;">Nenhuma mensagem encontrada.</div>';
-        return;
-      }
-      document.getElementById('historyMessages').innerHTML=msgs.reverse().map(m=>`
-        <div>
-          <div class="msg-bubble ${m.type}">${m.message||'(mídia)'}</div>
-          <div class="msg-time" style="${m.type==='sent'?'text-align:right':''}">${formatDateTime(m.timestamp)}</div>
-        </div>`).join('');
-      const c=document.getElementById('historyMessages');
-      c.scrollTop=c.scrollHeight;
-    } catch(e){
-      document.getElementById('historyMessages').innerHTML='<div style="text-align:center;color:var(--red);padding:20px;">Erro ao carregar.</div>';
-    }
-  }
-
-  function closeModal(id){ document.getElementById(id).classList.remove('open'); }
-
-  function openConfig(){
-    renderConfigForms();
-    document.getElementById('configModal').classList.add('open');
-  }
-
-  function instanceFormHtml(i, inst={}) {
-    return `<div class="config-instance-form" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;">
-      <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Número ${i+1}</div>
-      <div class="config-field"><label>Nome (ex: Loja Recife)</label><input type="text" placeholder="Pós-venda Riolax" value="${inst.name||''}" data-field="name"></div>
-      <div class="config-field" style="margin-top:8px;"><label>ID da Instância (Z-API)</label><input type="text" placeholder="3F3770C0936001A..." value="${inst.id||''}" data-field="id"></div>
-      <div class="config-field" style="margin-top:8px;"><label>Token da Instância (Z-API)</label><input type="password" placeholder="2162C293A7532..." value="${inst.token||''}" data-field="token"></div>
-    </div>`;
-  }
-
-  function renderConfigForms(){
-    const c=document.getElementById('instanceConfigList');
-    if(instances.length===0){c.innerHTML='';addInstanceForm();}
-    else c.innerHTML=instances.map((inst,i)=>instanceFormHtml(i,inst)).join('');
-  }
-
-  function addInstanceForm(){
-    const c=document.getElementById('instanceConfigList');
-    const count=c.querySelectorAll('.config-instance-form').length;
-    c.insertAdjacentHTML('beforeend',instanceFormHtml(count));
-  }
-
-  async function saveConfig(){
-    const forms=document.querySelectorAll('.config-instance-form');
-    let saved=0;
-    for(const form of forms){
-      const name=form.querySelector('[data-field="name"]').value.trim();
-      const id=form.querySelector('[data-field="id"]').value.trim();
-      const token=form.querySelector('[data-field="token"]').value.trim();
-      if(!name||!id||!token) continue;
-      try{
-        await fetch('/api/instances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,name,token})});
-        saved++;
-      }catch(e){}
-    }
-    if(saved>0){
-      showToast(`✅ ${saved} número(s) salvo(s)!`,'success');
-      closeModal('configModal');
-      fetchInstances();
-      fetchConversations();
-    } else {
-      showToast('Preencha todos os campos.','error');
-    }
-  }
-
-  async function sendReport(){
-    showToast('⏳ Enviando relatório...','');
-    try{
-      const r=await fetch('/api/report/send',{method:'POST'});
-      const d=await r.json();
-      if(d.success) showToast('✅ Relatório enviado!','success');
-      else showToast('❌ '+d.error,'error');
-    }catch(e){ showToast('❌ Erro ao enviar.','error'); }
-  }
-
-  function showToast(msg,type){
-    const t=document.getElementById('toast');
-    t.textContent=msg;
-    t.className=`toast ${type} show`;
-    setTimeout(()=>t.classList.remove('show'),3500);
-  }
-
-  document.querySelectorAll('.modal-overlay').forEach(o=>{
-    o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); });
-  });
-
-  async function init(){
-    await fetchInstances();
-    await fetchConversations();
-    setInterval(fetchConversations,60000);
-  }
+  let currentFilter='all',allConversations=[],instances=[];
+  function formatTimeAgo(ts){const s=Math.floor(Date.now()/1000-ts);if(s<60)return s+'s';const m=Math.floor(s/60);if(m<60)return m+'min';const h=Math.floor(m/60);const rm=m%60;if(h<24)return h+'h'+(rm>0?String(rm).padStart(2,'0')+'m':'');return Math.floor(h/24)+'d';}
+  function formatDateTime(ts){return new Date(ts*1000).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}
+  function getUrgency(ts){const m=(Date.now()/1000-ts)/60;if(m>120)return 'urgent';if(m>60)return 'warning';return 'normal';}
+  function getInitials(name,phone){if(name&&name.length>0)return name.charAt(0).toUpperCase();return(phone||'').replace(/\D/g,'').slice(-2,-1)||'?';}
+  function fmtPhone(p){const n=(p||'').replace('@c.us','').replace(/\D/g,'');if(n.length===13)return`+${n.slice(0,2)} (${n.slice(2,4)}) ${n.slice(4,9)}-${n.slice(9)}`;if(n.length===12)return`+${n.slice(0,2)} (${n.slice(2,4)}) ${n.slice(4,8)}-${n.slice(8)}`;return n;}
+  async function fetchInstances(){try{const r=await fetch('/api/instances');instances=await r.json();document.getElementById('instanceFilters').innerHTML=instances.map(i=>`<button class="filter-btn" onclick="setFilter('${i.id}',this)">${i.name}</button>`).join('');document.getElementById('setupBanner').style.display=instances.length===0?'flex':'none';}catch(e){}}
+  async function fetchConversations(){try{const q=currentFilter!=='all'?`?instanceId=${currentFilter}`:'';const r=await fetch('/api/pending'+q);allConversations=await r.json();renderConversations(allConversations);fetchStats();document.getElementById('lastUpdate').textContent='Atualizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}catch(e){console.error(e);}}
+  async function fetchStats(){try{const q=currentFilter!=='all'?`?instanceId=${currentFilter}`:'';const r=await fetch('/api/stats'+q);const d=await r.json();document.getElementById('statCritical').textContent=d.pendingCritical??'—';document.getElementById('statPending').textContent=d.pending??'—';document.getElementById('statResponded').textContent=d.respondedToday??'—';const warn=allConversations.filter(c=>{const m=(Date.now()/1000-c.last_timestamp)/60;return m>60&&m<=120;}).length;document.getElementById('statWarning').textContent=warn;}catch(e){}}
+  function renderConversations(convs){const list=document.getElementById('conversationList');document.getElementById('pendingCount').textContent=convs.length;if(convs.length===0){list.innerHTML=`<div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-title">Tudo em dia!</div><div class="empty-sub">Nenhuma conversa pendente de resposta no momento.</div></div>`;return;}list.innerHTML=convs.map(c=>{const urg=getUrgency(c.last_timestamp);const init=getInitials(c.contact_name,c.phone);const name=c.contact_name||fmtPhone(c.phone);const msg=(c.last_message||'(mídia)').substring(0,80);const time=formatTimeAgo(c.last_timestamp);const inst=c.instance_name||c.instance_id;const phone=fmtPhone(c.phone);const safePhone=encodeURIComponent(c.phone);const safeName=name.replace(/'/g,"\\'");return`<div class="conv-card ${urg}" onclick="openHistory('${c.instance_id}','${safePhone}','${safeName}')"><div class="conv-avatar">${init}</div><div class="conv-body"><div class="conv-name">${name}<span class="conv-tag">${inst}</span></div><div class="conv-msg">"${msg}${c.last_message&&c.last_message.length>80?'...':''}"</div><div class="conv-phone">${phone}</div></div><div class="conv-time"><div class="time-badge">${time}</div><div class="time-label">sem resposta</div></div></div>`;}).join('');}
+  function setFilter(f,btn){currentFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');fetchConversations();}
+  async function openHistory(instanceId,phone,name){document.getElementById('historyModalTitle').textContent=`💬 ${name}`;document.getElementById('historyMessages').innerHTML='<div style="text-align:center;color:#94a3b8;padding:20px;">Carregando...</div>';document.getElementById('historyModal').classList.add('open');try{const r=await fetch(`/api/conversation/${instanceId}/${phone}`);const msgs=await r.json();if(!msgs.length){document.getElementById('historyMessages').innerHTML='<div style="text-align:center;color:#94a3b8;padding:20px;">Nenhuma mensagem encontrada.</div>';return;}document.getElementById('historyMessages').innerHTML=msgs.reverse().map(m=>`<div><div class="msg-bubble ${m.type}">${m.message||'(mídia)'}</div><div class="msg-time" style="${m.type==='sent'?'text-align:right':''}">${formatDateTime(m.timestamp)}</div></div>`).join('');const c=document.getElementById('historyMessages');c.scrollTop=c.scrollHeight;}catch(e){document.getElementById('historyMessages').innerHTML='<div style="text-align:center;color:#ef4444;padding:20px;">Erro ao carregar.</div>';}}
+  function closeModal(id){document.getElementById(id).classList.remove('open');}
+  function openConfig(){renderConfigForms();document.getElementById('configModal').classList.add('open');}
+  function instanceFormHtml(i,inst={}){return`<div class="config-instance-form" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;"><div style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Número ${i+1}</div><div class="config-field"><label>Nome (ex: Loja Recife)</label><input type="text" placeholder="Pós-venda Riolax" value="${inst.name||''}" data-field="name"></div><div class="config-field" style="margin-top:8px;"><label>ID da Instância (Z-API)</label><input type="text" placeholder="3F3770C0936001A..." value="${inst.id||''}" data-field="id"></div><div class="config-field" style="margin-top:8px;"><label>Token da Instância (Z-API)</label><input type="password" placeholder="2162C293A7532..." value="${inst.token||''}" data-field="token"></div></div>`;}
+  function renderConfigForms(){const c=document.getElementById('instanceConfigList');if(instances.length===0){c.innerHTML='';addInstanceForm();}else c.innerHTML=instances.map((inst,i)=>instanceFormHtml(i,inst)).join('');}
+  function addInstanceForm(){const c=document.getElementById('instanceConfigList');const count=c.querySelectorAll('.config-instance-form').length;c.insertAdjacentHTML('beforeend',instanceFormHtml(count));}
+  async function saveConfig(){const forms=document.querySelectorAll('.config-instance-form');let saved=0;for(const form of forms){const name=form.querySelector('[data-field="name"]').value.trim();const id=form.querySelector('[data-field="id"]').value.trim();const token=form.querySelector('[data-field="token"]').value.trim();if(!name||!id||!token)continue;try{await fetch('/api/instances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,name,token})});saved++;}catch(e){}}if(saved>0){showToast(`✅ ${saved} número(s) salvo(s)!`,'success');closeModal('configModal');fetchInstances();fetchConversations();}else showToast('Preencha todos os campos.','error');}
+  async function sendReport(){showToast('⏳ Enviando relatório...','');try{const r=await fetch('/api/report/send',{method:'POST'});const d=await r.json();if(d.success)showToast('✅ Relatório enviado!','success');else showToast('❌ '+d.error,'error');}catch(e){showToast('❌ Erro ao enviar.','error');}}
+  function showToast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast ${type} show`;setTimeout(()=>t.classList.remove('show'),3500);}
+  document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});});
+  async function init(){await fetchInstances();await fetchConversations();setInterval(fetchConversations,60000);}
   init();
 </script>
 </body>
