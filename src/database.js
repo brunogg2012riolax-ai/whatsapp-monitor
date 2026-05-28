@@ -1,5 +1,10 @@
 const { Pool } = require('pg');
 
+function normalizePhone(phone) {
+  if (!phone) return phone;
+  return phone.replace(/@.*$/, '').trim();
+}
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('railway.internal') 
