@@ -84,6 +84,16 @@ app.post('/webhook/:instanceId', async (req, res) => {
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 
+app.post('/api/fix-messages', async (req, res) => {
+  try {
+    // Apaga todas as mensagens e recomeça limpo
+    await pool.query('DELETE FROM messages');
+    console.log('✅ Mensagens antigas removidas!');
+    res.json({ success: true, message: 'Banco limpo! Agora o sistema monitora corretamente.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 app.get('/api/pending', async (req, res) => {
   try {
     const pending = await getPendingConversations(req.query.instanceId || null);
@@ -134,7 +144,7 @@ app.post('/api/report/send', async (req, res) => {
   res.json({ success: true });
 } catch (err) {
   console.error('❌ ERRO NO RELATÓRIO:', err.message);
-  console.error(err.stack);
+  console.error(err.sta
   res.status(500).json({ error: err.message });
 }
 });
