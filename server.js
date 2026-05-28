@@ -10,7 +10,10 @@ const {
   getAllConversationsStats,
   getConversationHistory,
   upsertInstance,
-  getInstances
+  getInstances,
+  saveChatMapping,
+  getRealPhone,
+  pool
 } = require('./src/database');
 
 const { sendDailyReport } = require('./src/emailReport');
@@ -21,6 +24,11 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+function normalizePhone(phone) {
+  if (!phone) return phone;
+  return phone.replace(/@.*$/, '').trim();
+}
 
 // ─── WEBHOOK Z-API ────────────────────────────────────────────────────────────
 
@@ -41,37 +49,60 @@ app.post('/webhook/:instanceId', async (req, res) => {
     }
 
     if (type === 'ReceivedCallback') {
- if (body.fromMe === true) {
-  // connectedPhone é o número real do cliente na conversa
-  const realPhone = body.connectedPhone || 
-                    body.senderPhone ||
-                    body.recipientPhone ||
-                    (body.phone && !body.phone.includes('@lid') ? body.phone : null) ||
-                    body.phone;
+      if (body.fromMe === true) {
+        // Mensagem enviada pela vendedora
+        const chatLid = normalizePhone(body.chatLid || body.phone);
+        const realPhone = await getRealPhone(instanceId, chatLid) || normalizePhone(phone);
 
-  console.log(`[DEBUG SENT FULL]`, JSON.stringify(body).substring(0, 800));
+        console.log(`[DEBUG] chatLid:${chatLid} → realPhone:${realPhone}`);
 
-  await saveMessage({
-    instanceId,
-    phone: realPhone,
-    contactName: null,
-    message: text || '(mídia)',
-    type: 'sent',
-    timestamp
-  });
-  console.log(`[📤 Enviada] para ${realPhone}: ${text?.substring(0, 50)}`);
-}
+        await saveMessage({
+          instanceId,
+          phone: realPhone,
+          contactName: null,
+          message: text || '(mídia)',
+          type: 'sent',
+          timestamp
+        });
+        console.log(`[📤 Enviada] para ${realPhone}: ${text?.substring(0, 50)}`);
+
+      } else {
+        // Mensagem recebida do cliente
+        const contactName = body.senderName || body.pushName || body.notifyName || '';
+        const realPhone = normalizePhone(phone);
+
+        await saveMessage({
+          instanceId,
+          phone: realPhone,
+          contactName,
+          message: text || '(mídia)',
+          type: 'received',
+          timestamp
+        });
+
+        // Salva o mapeamento chatLid → número real do cliente
+        const chatLid = normalizePhone(body.chatLid || body.phone);
+        if (chatLid && chatLid !== realPhone) {
+          await saveChatMapping(instanceId, chatLid, realPhone);
+        }
+
+        console.log(`[✅ Recebida] ${contactName || realPhone}: ${text?.substring(0, 50)}`);
+      }
     }
 
     if (type === 'SentCallback') {
+      const chatLid = normalizePhone(body.chatLid || body.phone);
+      const realPhone = await getRealPhone(instanceId, chatLid) || normalizePhone(phone);
+
       await saveMessage({
-        instanceId, phone,
+        instanceId,
+        phone: realPhone,
         contactName: null,
         message: text || '(mídia)',
         type: 'sent',
         timestamp
       });
-      console.log(`[📤 Enviada] para ${phone}: ${text?.substring(0, 50)}`);
+      console.log(`[📤 Enviada SentCallback] para ${realPhone}: ${text?.substring(0, 50)}`);
     }
 
     res.json({ status: 'ok' });
@@ -85,8 +116,8 @@ app.post('/webhook/:instanceId', async (req, res) => {
 
 app.post('/api/fix-messages', async (req, res) => {
   try {
-    const { pool } = require('./src/database');
     await pool.query('DELETE FROM messages');
+    await pool.query('DELETE FROM chat_mappings');
     console.log('✅ Mensagens antigas removidas!');
     res.json({ success: true, message: 'Banco limpo!' });
   } catch (err) {
