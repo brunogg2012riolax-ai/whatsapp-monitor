@@ -41,16 +41,19 @@ app.post('/webhook/:instanceId', async (req, res) => {
     }
 
     if (type === 'ReceivedCallback') {
-      if (body.fromMe === true) {
-        await saveMessage({
-          instanceId, phone,
-          contactName: null,
-          message: text || '(mídia)',
-          type: 'sent',
-          timestamp
-        });
-        console.log(`[📤 Enviada] para ${phone}: ${text?.substring(0, 50)}`);
-      } else {
+  if (body.fromMe === true) {
+    const sentTo = body.phone || body.chatId || body.to;
+    console.log(`[DEBUG ENVIADA] phone:${body.phone} chatId:${body.chatId} to:${body.to} broadcast:${body.broadcast}`);
+    await saveMessage({
+      instanceId,
+      phone: sentTo,
+      contactName: null,
+      message: text || '(mídia)',
+      type: 'sent',
+      timestamp
+    });
+    console.log(`[📤 Enviada] para ${sentTo}: ${text?.substring(0, 50)}`);
+  } else {
         const contactName = body.senderName || body.pushName || body.notifyName || '';
         await saveMessage({
           instanceId, phone, contactName,
