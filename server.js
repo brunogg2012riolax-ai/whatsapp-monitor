@@ -30,7 +30,10 @@ app.post('/webhook/:instanceId', async (req, res) => {
     const body = req.body;
     const type = body.type;
 
-    if (type === 'ReceivedCallback' || body.isNewMsg) {
+    // LOG COMPLETO para debug
+    console.log(`[WEBHOOK] type: ${type} | fromMe: ${body.fromMe} | isSentByMe: ${body.isSentByMe} | phone: ${body.phone || body.chatId}`);
+
+    if (type === 'ReceivedCallback' || (body.fromMe === false && body.isNewMsg)) {
       const phone = body.phone || body.from || body.chatId;
       const text = body.text?.message || body.caption || body.body || '';
       const contactName = body.senderName || body.pushName || body.notifyName || '';
@@ -42,13 +45,13 @@ app.post('/webhook/:instanceId', async (req, res) => {
           instanceId, phone, contactName,
           message: text || '(mídia)',
           type: 'received',
-          timestamp: Math.floor(timestamp)
+          timestamp
         });
         console.log(`[✅ Recebida] ${contactName || phone}: ${text?.substring(0, 50)}`);
       }
     }
 
-    if (type === 'SentCallback' || body.isSentByMe || body.fromMe === true) {
+    if (type === 'SentCallback' || body.isSentByMe === true || body.fromMe === true) {
       const phone = body.phone || body.to || body.chatId;
       const text = body.text?.message || body.caption || body.body || '';
       const ts = body.momment || body.timestamp || Date.now();
@@ -60,9 +63,9 @@ app.post('/webhook/:instanceId', async (req, res) => {
           contactName: null,
           message: text || '(mídia)',
           type: 'sent',
-          timestamp: Math.floor(timestamp)
+          timestamp
         });
-        console.log(`[📤 Enviada] para ${phone}`);
+        console.log(`[📤 Enviada] para ${phone}: ${text?.substring(0, 50)}`);
       }
     }
 
