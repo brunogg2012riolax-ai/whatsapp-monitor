@@ -121,5 +121,6 @@ module.exports = {
   getConversationHistory,
   saveMessage,
   upsertInstance,
-  getInstances
+  getInstances,
+  pool
 };
