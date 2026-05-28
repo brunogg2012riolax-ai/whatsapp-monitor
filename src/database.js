@@ -4,6 +4,22 @@ function normalizePhone(phone) {
   if (!phone) return phone;
   return phone.replace(/@.*$/, '').trim();
 }
+async function saveChatMapping(instanceId, chatLid, realPhone) {
+  await pool.query(
+    `INSERT INTO chat_mappings (instance_id, chat_lid, real_phone) 
+     VALUES ($1, $2, $3)
+     ON CONFLICT (instance_id, chat_lid) DO UPDATE SET real_phone = EXCLUDED.real_phone`,
+    [instanceId, normalizePhone(chatLid), normalizePhone(realPhone)]
+  );
+}
+
+async function getRealPhone(instanceId, chatLid) {
+  const result = await pool.query(
+    `SELECT real_phone FROM chat_mappings WHERE instance_id = $1 AND chat_lid = $2`,
+    [instanceId, normalizePhone(chatLid)]
+  );
+  return result.rows.length > 0 ? result.rows[0].real_phone : null;
+}
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -30,6 +46,13 @@ async function initSchema() {
       type TEXT NOT NULL CHECK(type IN ('received','sent')),
       timestamp BIGINT NOT NULL,
       created_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())
+    );
+
+    CREATE TABLE IF NOT EXISTS chat_mappings (
+      instance_id TEXT NOT NULL,
+      chat_lid TEXT NOT NULL,
+      real_phone TEXT NOT NULL,
+      PRIMARY KEY (instance_id, chat_lid)
     );
 
     CREATE INDEX IF NOT EXISTS idx_messages_phone ON messages(instance_id, phone, timestamp);
