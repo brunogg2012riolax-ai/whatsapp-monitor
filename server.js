@@ -29,18 +29,31 @@ app.post('/webhook/:instanceId', async (req, res) => {
     const { instanceId } = req.params;
     const body = req.body;
     const type = body.type;
+    const phone = body.phone || body.from || body.to || body.chatId;
+    const text = body.text?.message || body.caption || body.body || '';
+    const ts = body.momment || body.timestamp || Date.now();
+    const timestamp = ts > 9999999999 ? Math.floor(ts / 1000) : ts;
 
-    // LOG COMPLETO para debug
-    console.log(`[WEBHOOK] type: ${type} | fromMe: ${body.fromMe} | isSentByMe: ${body.isSentByMe} | phone: ${body.phone || body.chatId}`);
+    console.log(`[WEBHOOK] type: ${type} | fromMe: ${body.fromMe} | phone: ${phone}`);
 
-    if (type === 'ReceivedCallback' || (body.fromMe === false && body.isNewMsg)) {
-      const phone = body.phone || body.from || body.chatId;
-      const text = body.text?.message || body.caption || body.body || '';
-      const contactName = body.senderName || body.pushName || body.notifyName || '';
-      const ts = body.momment || body.timestamp || Date.now();
-      const timestamp = ts > 9999999999 ? Math.floor(ts / 1000) : ts;
+    if (!phone || phone.includes('@g.us')) {
+      return res.json({ status: 'ok' });
+    }
 
-      if (phone && !phone.includes('@g.us')) {
+    if (type === 'ReceivedCallback') {
+      if (body.fromMe === true) {
+        // Mensagem enviada pela vendedora (capturada pelo "Notificar enviadas")
+        await saveMessage({
+          instanceId, phone,
+          contactName: null,
+          message: text || '(mídia)',
+          type: 'sent',
+          timestamp
+        });
+        console.log(`[📤 Enviada] para ${phone}: ${text?.substring(0, 50)}`);
+      } else {
+        // Mensagem recebida do cliente
+        const contactName = body.senderName || body.pushName || body.notifyName || '';
         await saveMessage({
           instanceId, phone, contactName,
           message: text || '(mídia)',
@@ -51,22 +64,15 @@ app.post('/webhook/:instanceId', async (req, res) => {
       }
     }
 
-    if (type === 'SentCallback' || body.isSentByMe === true || body.fromMe === true) {
-      const phone = body.phone || body.to || body.chatId;
-      const text = body.text?.message || body.caption || body.body || '';
-      const ts = body.momment || body.timestamp || Date.now();
-      const timestamp = ts > 9999999999 ? Math.floor(ts / 1000) : ts;
-
-      if (phone && !phone.includes('@g.us')) {
-        await saveMessage({
-          instanceId, phone,
-          contactName: null,
-          message: text || '(mídia)',
-          type: 'sent',
-          timestamp
-        });
-        console.log(`[📤 Enviada] para ${phone}: ${text?.substring(0, 50)}`);
-      }
+    if (type === 'SentCallback') {
+      await saveMessage({
+        instanceId, phone,
+        contactName: null,
+        message: text || '(mídia)',
+        type: 'sent',
+        timestamp
+      });
+      console.log(`[📤 Enviada] para ${phone}: ${text?.substring(0, 50)}`);
     }
 
     res.json({ status: 'ok' });
