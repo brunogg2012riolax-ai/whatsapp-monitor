@@ -150,5 +150,7 @@ module.exports = {
   saveMessage,
   upsertInstance,
   getInstances,
+  saveChatMapping,
+  getRealPhone,
   pool
 };
