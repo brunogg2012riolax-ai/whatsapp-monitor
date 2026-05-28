@@ -42,7 +42,6 @@ app.post('/webhook/:instanceId', async (req, res) => {
 
     if (type === 'ReceivedCallback') {
       if (body.fromMe === true) {
-        // Mensagem enviada pela vendedora (capturada pelo "Notificar enviadas")
         await saveMessage({
           instanceId, phone,
           contactName: null,
@@ -52,7 +51,6 @@ app.post('/webhook/:instanceId', async (req, res) => {
         });
         console.log(`[📤 Enviada] para ${phone}: ${text?.substring(0, 50)}`);
       } else {
-        // Mensagem recebida do cliente
         const contactName = body.senderName || body.pushName || body.notifyName || '';
         await saveMessage({
           instanceId, phone, contactName,
@@ -86,14 +84,15 @@ app.post('/webhook/:instanceId', async (req, res) => {
 
 app.post('/api/fix-messages', async (req, res) => {
   try {
-    // Apaga todas as mensagens e recomeça limpo
+    const { pool } = require('./src/database');
     await pool.query('DELETE FROM messages');
     console.log('✅ Mensagens antigas removidas!');
-    res.json({ success: true, message: 'Banco limpo! Agora o sistema monitora corretamente.' });
+    res.json({ success: true, message: 'Banco limpo!' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
 app.get('/api/pending', async (req, res) => {
   try {
     const pending = await getPendingConversations(req.query.instanceId || null);
@@ -135,23 +134,24 @@ app.post('/api/instances', async (req, res) => {
 
 app.post('/api/report/send', async (req, res) => {
   try {
-  const emailConfig = {
-    apiKey: process.env.RESEND_API_KEY,
-    to: process.env.EMAIL_TO
-  };
-  console.log('📧 Tentando enviar relatório para:', emailConfig.to);
-  await sendDailyReport(emailConfig);
-  res.json({ success: true });
-} catch (err) {
-  console.error('❌ ERRO NO RELATÓRIO:', err.message);
-  console.error(err.sta
-  res.status(500).json({ error: err.message });
-}
+    const emailConfig = {
+      apiKey: process.env.RESEND_API_KEY,
+      to: process.env.EMAIL_TO
+    };
+    console.log('📧 Tentando enviar relatório para:', emailConfig.to);
+    await sendDailyReport(emailConfig);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ ERRO NO RELATÓRIO:', err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
+
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 // ─── CRON ─────────────────────────────────────────────────────────────────────
 
-const REPORT_HOUR = process.env.REPORT_HOUR || '8';
+const REPORT_HOUR = process.env.REPORT_HOUR || '22';
 cron.schedule(`0 ${REPORT_HOUR} * * *`, async () => {
   await sendDailyReport({
     apiKey: process.env.RESEND_API_KEY,
