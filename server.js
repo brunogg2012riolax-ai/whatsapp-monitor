@@ -41,21 +41,16 @@ app.post('/webhook/:instanceId', async (req, res) => {
     }
 
     if (type === 'ReceivedCallback') {
-  if (body.fromMe === true) {
-  // Busca o número real pelo chatLid na tabela de mensagens
-  const { pool } = require('./src/database');
-  const chatLid = body.phone || body.chatId;
-  
-  // Tenta achar o número real associado a esse chatLid
-  const result = await pool.query(
-    `SELECT phone FROM messages WHERE instance_id = $1 AND (phone = $2 OR phone LIKE $3) ORDER BY timestamp DESC LIMIT 1`,
-    [instanceId, chatLid, `%${chatLid.replace('@lid','').replace('@c.us','')}%`]
-  );
-  
-  const realPhone = result.rows.length > 0 ? result.rows[0].phone : chatLid;
-  
-  console.log(`[DEBUG] chatLid: ${chatLid} → realPhone: ${realPhone}`);
-  
+ if (body.fromMe === true) {
+  // connectedPhone é o número real do cliente na conversa
+  const realPhone = body.connectedPhone || 
+                    body.senderPhone ||
+                    body.recipientPhone ||
+                    (body.phone && !body.phone.includes('@lid') ? body.phone : null) ||
+                    body.phone;
+
+  console.log(`[DEBUG] connectedPhone:${body.connectedPhone} realPhone:${realPhone}`);
+
   await saveMessage({
     instanceId,
     phone: realPhone,
