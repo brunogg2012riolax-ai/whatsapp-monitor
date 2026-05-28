@@ -49,7 +49,7 @@ app.post('/webhook/:instanceId', async (req, res) => {
                     (body.phone && !body.phone.includes('@lid') ? body.phone : null) ||
                     body.phone;
 
-  console.log(`[DEBUG] connectedPhone:${body.connectedPhone} realPhone:${realPhone}`);
+  console.log(`[DEBUG SENT FULL]`, JSON.stringify(body).substring(0, 800));
 
   await saveMessage({
     instanceId,
