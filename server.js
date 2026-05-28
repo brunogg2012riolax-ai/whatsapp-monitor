@@ -42,27 +42,30 @@ app.post('/webhook/:instanceId', async (req, res) => {
 
     if (type === 'ReceivedCallback') {
   if (body.fromMe === true) {
-    const sentTo = body.phone || body.chatId || body.to;
-    console.log(`[DEBUG COMPLETO]`, JSON.stringify(body).substring(0, 500));
-    await saveMessage({
-      instanceId,
-      phone: sentTo,
-      contactName: null,
-      message: text || '(mídia)',
-      type: 'sent',
-      timestamp
-    });
-    console.log(`[📤 Enviada] para ${sentTo}: ${text?.substring(0, 50)}`);
-  } else {
-        const contactName = body.senderName || body.pushName || body.notifyName || '';
-        await saveMessage({
-          instanceId, phone, contactName,
-          message: text || '(mídia)',
-          type: 'received',
-          timestamp
-        });
-        console.log(`[✅ Recebida] ${contactName || phone}: ${text?.substring(0, 50)}`);
-      }
+  // Busca o número real pelo chatLid na tabela de mensagens
+  const { pool } = require('./src/database');
+  const chatLid = body.phone || body.chatId;
+  
+  // Tenta achar o número real associado a esse chatLid
+  const result = await pool.query(
+    `SELECT phone FROM messages WHERE instance_id = $1 AND (phone = $2 OR phone LIKE $3) ORDER BY timestamp DESC LIMIT 1`,
+    [instanceId, chatLid, `%${chatLid.replace('@lid','').replace('@c.us','')}%`]
+  );
+  
+  const realPhone = result.rows.length > 0 ? result.rows[0].phone : chatLid;
+  
+  console.log(`[DEBUG] chatLid: ${chatLid} → realPhone: ${realPhone}`);
+  
+  await saveMessage({
+    instanceId,
+    phone: realPhone,
+    contactName: null,
+    message: text || '(mídia)',
+    type: 'sent',
+    timestamp
+  });
+  console.log(`[📤 Enviada] para ${realPhone}: ${text?.substring(0, 50)}`);
+}
     }
 
     if (type === 'SentCallback') {
