@@ -43,7 +43,7 @@ app.post('/webhook/:instanceId', async (req, res) => {
     if (type === 'ReceivedCallback') {
   if (body.fromMe === true) {
     const sentTo = body.phone || body.chatId || body.to;
-    console.log(`[DEBUG ENVIADA] phone:${body.phone} chatId:${body.chatId} to:${body.to} broadcast:${body.broadcast}`);
+    console.log(`[DEBUG COMPLETO]`, JSON.stringify(body).substring(0, 500));
     await saveMessage({
       instanceId,
       phone: sentTo,
