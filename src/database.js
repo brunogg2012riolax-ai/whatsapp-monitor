@@ -95,7 +95,7 @@ async function getAllConversationsStats(instanceId = null) {
 async function getConversationHistory(instanceId, phone, limit = 50) {
   const result = await pool.query(
     `SELECT * FROM messages WHERE instance_id = $1 AND phone = $2 ORDER BY timestamp DESC LIMIT $3`,
-    [instanceId, phone, limit]
+    [instanceId, normalizePhone(phone), limit]
   );
   return result.rows;
 }
@@ -103,7 +103,7 @@ async function getConversationHistory(instanceId, phone, limit = 50) {
 async function saveMessage({ instanceId, phone, contactName, message, type, timestamp }) {
   await pool.query(
     `INSERT INTO messages (instance_id, phone, contact_name, message, type, timestamp) VALUES ($1,$2,$3,$4,$5,$6)`,
-    [instanceId, phone, contactName, message, type, timestamp || Math.floor(Date.now() / 1000)]
+    [instanceId, normalizePhone(phone), contactName, message, type, timestamp || Math.floor(Date.now() / 1000)]
   );
 }
 
