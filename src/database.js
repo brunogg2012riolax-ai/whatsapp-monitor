@@ -48,6 +48,13 @@ async function initSchema() {
       created_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())
     );
 
+    CREATE TABLE IF NOT EXISTS ignored_conversations (
+      instance_id TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      ignored_until BIGINT,
+      PRIMARY KEY (instance_id, phone)
+    );
+    
     CREATE TABLE IF NOT EXISTS chat_mappings (
       instance_id TEXT NOT NULL,
       chat_lid TEXT NOT NULL,
@@ -143,6 +150,30 @@ async function getInstances() {
   return result.rows;
 }
 
+async function ignoreConversation(instanceId, phone) {
+  await pool.query(
+    `INSERT INTO ignored_conversations (instance_id, phone, ignored_until)
+     VALUES ($1, $2, NULL)
+     ON CONFLICT (instance_id, phone) DO UPDATE SET ignored_until = NULL`,
+    [instanceId, normalizePhone(phone)]
+  );
+}
+
+async function unignoreConversation(instanceId, phone) {
+  await pool.query(
+    `DELETE FROM ignored_conversations WHERE instance_id = $1 AND phone = $2`,
+    [instanceId, normalizePhone(phone)]
+  );
+}
+
+async function isIgnored(instanceId, phone) {
+  const result = await pool.query(
+    `SELECT 1 FROM ignored_conversations WHERE instance_id = $1 AND phone = $2`,
+    [instanceId, normalizePhone(phone)]
+  );
+  return result.rows.length > 0;
+}
+
 module.exports = {
   getPendingConversations,
   getAllConversationsStats,
@@ -152,5 +183,8 @@ module.exports = {
   getInstances,
   saveChatMapping,
   getRealPhone,
+  ignoreConversation,
+  unignoreConversation,
+  isIgnored,
   pool
 };
