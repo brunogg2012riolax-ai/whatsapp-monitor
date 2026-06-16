@@ -13,6 +13,9 @@ const {
   getInstances,
   saveChatMapping,
   getRealPhone,
+  ignoreConversation,
+  unignoreConversation,
+  isIgnored,
   pool
 } = require('./src/database');
 
@@ -50,11 +53,8 @@ app.post('/webhook/:instanceId', async (req, res) => {
 
     if (type === 'ReceivedCallback') {
       if (body.fromMe === true) {
-        // Mensagem enviada pela vendedora
         const chatLid = normalizePhone(body.chatLid || body.phone);
         const realPhone = await getRealPhone(instanceId, chatLid) || normalizePhone(phone);
-
-        console.log(`[DEBUG] chatLid:${chatLid} → realPhone:${realPhone}`);
 
         await saveMessage({
           instanceId,
@@ -64,10 +64,12 @@ app.post('/webhook/:instanceId', async (req, res) => {
           type: 'sent',
           timestamp
         });
+
+        // Quando vendedora responde, remove do ignorados
+        await unignoreConversation(instanceId, realPhone);
         console.log(`[📤 Enviada] para ${realPhone}: ${text?.substring(0, 50)}`);
 
       } else {
-        // Mensagem recebida do cliente
         const contactName = body.senderName || body.pushName || body.notifyName || '';
         const realPhone = normalizePhone(phone);
 
@@ -80,11 +82,14 @@ app.post('/webhook/:instanceId', async (req, res) => {
           timestamp
         });
 
-        // Salva o mapeamento chatLid → número real do cliente
+        // Salva mapeamento chatLid → número real
         const chatLid = normalizePhone(body.chatLid || body.phone);
         if (chatLid && chatLid !== realPhone) {
           await saveChatMapping(instanceId, chatLid, realPhone);
         }
+
+        // Se estava ignorado e cliente mandou nova mensagem, remove do ignorados
+        await unignoreConversation(instanceId, realPhone);
 
         console.log(`[✅ Recebida] ${contactName || realPhone}: ${text?.substring(0, 50)}`);
       }
@@ -102,7 +107,8 @@ app.post('/webhook/:instanceId', async (req, res) => {
         type: 'sent',
         timestamp
       });
-      console.log(`[📤 Enviada SentCallback] para ${realPhone}: ${text?.substring(0, 50)}`);
+      await unignoreConversation(instanceId, realPhone);
+      console.log(`[📤 Enviada SentCallback] para ${realPhone}`);
     }
 
     res.json({ status: 'ok' });
@@ -118,7 +124,8 @@ app.post('/api/fix-messages', async (req, res) => {
   try {
     await pool.query('DELETE FROM messages');
     await pool.query('DELETE FROM chat_mappings');
-    console.log('✅ Mensagens antigas removidas!');
+    await pool.query('DELETE FROM ignored_conversations');
+    console.log('✅ Banco limpo!');
     res.json({ success: true, message: 'Banco limpo!' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -164,13 +171,28 @@ app.post('/api/instances', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ─── IGNORAR CONVERSA ─────────────────────────────────────────────────────────
+
+app.post('/api/ignore/:instanceId/:phone', async (req, res) => {
+  try {
+    await ignoreConversation(req.params.instanceId, decodeURIComponent(req.params.phone));
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/unignore/:instanceId/:phone', async (req, res) => {
+  try {
+    await unignoreConversation(req.params.instanceId, decodeURIComponent(req.params.phone));
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.post('/api/report/send', async (req, res) => {
   try {
     const emailConfig = {
       apiKey: process.env.RESEND_API_KEY,
       to: process.env.EMAIL_TO
     };
-    console.log('📧 Tentando enviar relatório para:', emailConfig.to);
     await sendDailyReport(emailConfig);
     res.json({ success: true });
   } catch (err) {
