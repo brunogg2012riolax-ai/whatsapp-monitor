@@ -42,17 +42,17 @@
   .section-title { font-size:16px; font-weight:700; color:#0f172a; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
   .badge { background:#f1f5f9; border:1px solid #e2e8f0; color:#64748b; border-radius:20px; padding:2px 10px; font-size:12px; font-weight:400; }
   .conversation-list { display:flex; flex-direction:column; gap:10px; }
-  .conv-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 20px; display:flex; align-items:center; gap:16px; cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+  .conv-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 20px; display:flex; align-items:center; gap:16px; transition:all 0.2s; position:relative; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
   .conv-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; }
   .conv-card.urgent::before { background:#ef4444; }
   .conv-card.warning::before { background:#f59e0b; }
   .conv-card.normal::before { background:#22c55e; }
-  .conv-card:hover { border-color:#22c55e; transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,0.08); }
-  .conv-avatar { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:18px; flex-shrink:0; }
+  .conv-card:hover { border-color:#22c55e; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
+  .conv-avatar { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:18px; flex-shrink:0; cursor:pointer; }
   .conv-card.urgent .conv-avatar { background:#fef2f2; color:#ef4444; }
   .conv-card.warning .conv-avatar { background:#fffbeb; color:#f59e0b; }
   .conv-card.normal .conv-avatar { background:#f0fdf4; color:#22c55e; }
-  .conv-body { flex:1; min-width:0; }
+  .conv-body { flex:1; min-width:0; cursor:pointer; }
   .conv-name { font-weight:600; font-size:14px; color:#0f172a; margin-bottom:3px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .conv-tag { font-size:10px; background:#f1f5f9; border:1px solid #e2e8f0; color:#94a3b8; border-radius:4px; padding:1px 7px; font-weight:400; }
   .conv-msg { font-size:13px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-style:italic; }
@@ -63,6 +63,8 @@
   .conv-card.warning .time-badge { color:#f59e0b; }
   .conv-card.normal .time-badge { color:#22c55e; }
   .time-label { font-size:10px; color:#94a3b8; margin-top:2px; }
+  .btn-ignore { background:#f1f5f9; border:1px solid #e2e8f0; color:#64748b; border-radius:6px; padding:5px 10px; font-size:11px; font-family:'Inter',sans-serif; cursor:pointer; white-space:nowrap; transition:all 0.2s; margin-top:6px; }
+  .btn-ignore:hover { background:#fee2e2; border-color:#fca5a5; color:#ef4444; }
   .empty-state { background:#fff; border:1px dashed #e2e8f0; border-radius:12px; padding:60px 20px; text-align:center; }
   .empty-icon { font-size:48px; margin-bottom:12px; }
   .empty-title { font-size:20px; font-weight:700; color:#22c55e; margin-bottom:6px; }
@@ -170,7 +172,37 @@
   async function fetchInstances(){try{const r=await fetch('/api/instances');instances=await r.json();document.getElementById('instanceFilters').innerHTML=instances.map(i=>`<button class="filter-btn" onclick="setFilter('${i.id}',this)">${i.name}</button>`).join('');document.getElementById('setupBanner').style.display=instances.length===0?'flex':'none';}catch(e){}}
   async function fetchConversations(){try{const q=currentFilter!=='all'?`?instanceId=${currentFilter}`:'';const r=await fetch('/api/pending'+q);allConversations=await r.json();renderConversations(allConversations);fetchStats();document.getElementById('lastUpdate').textContent='Atualizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}catch(e){console.error(e);}}
   async function fetchStats(){try{const q=currentFilter!=='all'?`?instanceId=${currentFilter}`:'';const r=await fetch('/api/stats'+q);const d=await r.json();document.getElementById('statCritical').textContent=d.pendingCritical??'—';document.getElementById('statPending').textContent=d.pending??'—';document.getElementById('statResponded').textContent=d.respondedToday??'—';const warn=allConversations.filter(c=>{const m=(Date.now()/1000-c.last_timestamp)/60;return m>60&&m<=120;}).length;document.getElementById('statWarning').textContent=warn;}catch(e){}}
-  function renderConversations(convs){const list=document.getElementById('conversationList');document.getElementById('pendingCount').textContent=convs.length;if(convs.length===0){list.innerHTML=`<div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-title">Tudo em dia!</div><div class="empty-sub">Nenhuma conversa pendente de resposta no momento.</div></div>`;return;}list.innerHTML=convs.map(c=>{const urg=getUrgency(c.last_timestamp);const init=getInitials(c.contact_name,c.phone);const name=c.contact_name||fmtPhone(c.phone);const msg=(c.last_message||'(mídia)').substring(0,80);const time=formatTimeAgo(c.last_timestamp);const inst=c.instance_name||c.instance_id;const phone=fmtPhone(c.phone);const safePhone=encodeURIComponent(c.phone);const safeName=name.replace(/'/g,"\\'");return`<div class="conv-card ${urg}" onclick="openHistory('${c.instance_id}','${safePhone}','${safeName}')"><div class="conv-avatar">${init}</div><div class="conv-body"><div class="conv-name">${name}<span class="conv-tag">${inst}</span></div><div class="conv-msg">"${msg}${c.last_message&&c.last_message.length>80?'...':''}"</div><div class="conv-phone">${phone}</div></div><div class="conv-time"><div class="time-badge">${time}</div><div class="time-label">sem resposta</div></div></div>`;}).join('');}
+  function renderConversations(convs){
+    const list=document.getElementById('conversationList');
+    document.getElementById('pendingCount').textContent=convs.length;
+    if(convs.length===0){list.innerHTML=`<div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-title">Tudo em dia!</div><div class="empty-sub">Nenhuma conversa pendente de resposta no momento.</div></div>`;return;}
+    list.innerHTML=convs.map(c=>{
+      const urg=getUrgency(c.last_timestamp);
+      const init=getInitials(c.contact_name,c.phone);
+      const name=c.contact_name||fmtPhone(c.phone);
+      const msg=(c.last_message||'(mídia)').substring(0,80);
+      const time=formatTimeAgo(c.last_timestamp);
+      const inst=c.instance_name||c.instance_id;
+      const phone=fmtPhone(c.phone);
+      const safePhone=encodeURIComponent(c.phone);
+      const safeName=name.replace(/'/g,"\\'");
+      return `<div class="conv-card ${urg}" id="card-${safePhone}">
+        <div class="conv-avatar" onclick="openHistory('${c.instance_id}','${safePhone}','${safeName}')">${init}</div>
+        <div class="conv-body" onclick="openHistory('${c.instance_id}','${safePhone}','${safeName}')">
+          <div class="conv-name">${name}<span class="conv-tag">${inst}</span></div>
+          <div class="conv-msg">"${msg}${c.last_message&&c.last_message.length>80?'...':''}"</div>
+          <div class="conv-phone">${phone}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+          <div class="conv-time">
+            <div class="time-badge">${time}</div>
+            <div class="time-label">sem resposta</div>
+          </div>
+          <button class="btn-ignore" onclick="ignoreConv('${c.instance_id}','${safePhone}')">🔕 Ignorar</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
   function setFilter(f,btn){currentFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');fetchConversations();}
   async function openHistory(instanceId,phone,name){document.getElementById('historyModalTitle').textContent=`💬 ${name}`;document.getElementById('historyMessages').innerHTML='<div style="text-align:center;color:#94a3b8;padding:20px;">Carregando...</div>';document.getElementById('historyModal').classList.add('open');try{const r=await fetch(`/api/conversation/${instanceId}/${phone}`);const msgs=await r.json();if(!msgs.length){document.getElementById('historyMessages').innerHTML='<div style="text-align:center;color:#94a3b8;padding:20px;">Nenhuma mensagem encontrada.</div>';return;}document.getElementById('historyMessages').innerHTML=msgs.reverse().map(m=>`<div><div class="msg-bubble ${m.type}">${m.message||'(mídia)'}</div><div class="msg-time" style="${m.type==='sent'?'text-align:right':''}">${formatDateTime(m.timestamp)}</div></div>`).join('');const c=document.getElementById('historyMessages');c.scrollTop=c.scrollHeight;}catch(e){document.getElementById('historyMessages').innerHTML='<div style="text-align:center;color:#ef4444;padding:20px;">Erro ao carregar.</div>';}}
   function closeModal(id){document.getElementById(id).classList.remove('open');}
@@ -179,6 +211,7 @@
   function renderConfigForms(){const c=document.getElementById('instanceConfigList');if(instances.length===0){c.innerHTML='';addInstanceForm();}else c.innerHTML=instances.map((inst,i)=>instanceFormHtml(i,inst)).join('');}
   function addInstanceForm(){const c=document.getElementById('instanceConfigList');const count=c.querySelectorAll('.config-instance-form').length;c.insertAdjacentHTML('beforeend',instanceFormHtml(count));}
   async function saveConfig(){const forms=document.querySelectorAll('.config-instance-form');let saved=0;for(const form of forms){const name=form.querySelector('[data-field="name"]').value.trim();const id=form.querySelector('[data-field="id"]').value.trim();const token=form.querySelector('[data-field="token"]').value.trim();if(!name||!id||!token)continue;try{await fetch('/api/instances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,name,token})});saved++;}catch(e){}}if(saved>0){showToast(`✅ ${saved} número(s) salvo(s)!`,'success');closeModal('configModal');fetchInstances();fetchConversations();}else showToast('Preencha todos os campos.','error');}
+  async function ignoreConv(instanceId, phone){try{await fetch(`/api/ignore/${instanceId}/${phone}`,{method:'POST'});showToast('🔕 Conversa ignorada!','success');fetchConversations();}catch(e){showToast('❌ Erro ao ignorar.','error');}}
   async function sendReport(){showToast('⏳ Enviando relatório...','');try{const r=await fetch('/api/report/send',{method:'POST'});const d=await r.json();if(d.success)showToast('✅ Relatório enviado!','success');else showToast('❌ '+d.error,'error');}catch(e){showToast('❌ Erro ao enviar.','error');}}
   function showToast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast ${type} show`;setTimeout(()=>t.classList.remove('show'),3500);}
   document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});});
