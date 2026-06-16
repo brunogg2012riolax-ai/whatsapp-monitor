@@ -90,7 +90,10 @@ async function getPendingConversations(instanceId = null) {
     FROM last_msg lm
     LEFT JOIN last_sent ls ON lm.instance_id = ls.instance_id AND lm.phone = ls.phone
     LEFT JOIN instances i ON lm.instance_id = i.id
+    LEFT JOIN ignored_conversations ic 
+      ON lm.instance_id = ic.instance_id AND lm.phone = ic.phone
     WHERE lm.type = 'received'
+    AND ic.phone IS NULL
     ${instanceId ? `AND lm.instance_id = $1` : ''}
     ORDER BY lm.timestamp ASC
   `;
