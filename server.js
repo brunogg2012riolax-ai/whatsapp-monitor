@@ -46,7 +46,6 @@ app.post('/webhook/:instanceId', async (req, res) => {
     const timestamp = ts > 9999999999 ? Math.floor(ts / 1000) : ts;
 
     console.log(`[WEBHOOK] type: ${type} | fromMe: ${body.fromMe} | phone: ${phone}`);
-console.log(`[DEBUG COMPLETO]`, JSON.stringify(body));
 
     if (!phone || phone.includes('@g.us')) {
       return res.json({ status: 'ok' });
